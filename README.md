@@ -24,13 +24,13 @@ Create conan profile, see https://github.com/blockspacer/CXXCTP#install-conan---
 Build with created conan profile:
 
 ```
-conan create . conan/stable --profile clang
+conan create . conan/stable --profile clang -o use_alloc_shim=True
 ```
 
 ## HOW TO INSTALL FROM CONAN
 
 ```
-conan install --build=missing --profile clang -o enable_tests=False ..
+conan install --build=missing --profile clang -o enable_tests=False -o use_alloc_shim=True ..
 ```
 
 ## USAGE EXAMPLES

@@ -36,6 +36,8 @@ class chromium_tcmalloc_conan_project(ConanFile):
         "shared": [True, False],
         "debug": [True, False],
         "enable_tests": [True, False],
+        "use_alloc_shim": [True, False],
+        "use_deb_alloc": [True, False],
         "enable_sanitizers": [True, False]
     }
 
@@ -43,6 +45,8 @@ class chromium_tcmalloc_conan_project(ConanFile):
         "shared=False",
         "debug=False",
         "enable_tests=False",
+        "use_alloc_shim=False",
+        "use_deb_alloc=False",
         "enable_sanitizers=False"
         # build
         #"*:shared=False"
@@ -105,6 +109,10 @@ class chromium_tcmalloc_conan_project(ConanFile):
         add_cmake_option("ENABLE_SANITIZERS", self.options.enable_sanitizers)
 
         add_cmake_option("ENABLE_TESTS", self.options.enable_tests)
+
+        add_cmake_option("USE_ALLOC_SHIM", self.options.use_alloc_shim)
+
+        add_cmake_option("USE_DEB_ALLOC", self.options.use_deb_alloc)
 
         cmake.configure(build_folder=self._build_subfolder)
 
