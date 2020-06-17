@@ -65,7 +65,7 @@ class chromium_tcmalloc_conan_project(ConanFile):
     # If the source code is going to be in the same repo as the Conan recipe,
     # there is no need to define a `source` method. The source folder can be
     # defined like this
-    exports_sources = ("LICENSE", "*.md", "include/*", "src/*",
+    exports_sources = ("LICENSE", "VERSION", "*.md", "include/*", "src/*",
                        "cmake/*", "CMakeLists.txt", "tests/*", "benchmarks/*",
                        "scripts/*", "tools/*", "codegen/*", "assets/*",
                        "docs/*", "licenses/*", "patches/*", "resources/*",
