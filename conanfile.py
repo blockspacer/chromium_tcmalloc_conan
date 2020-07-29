@@ -1,7 +1,19 @@
-from conans import ConanFile, CMake, tools
-import traceback
+import glob
 import os
-import shutil
+from conans import ConanFile, CMake, tools
+from conans.model.version import Version
+from conans.errors import ConanInvalidConfiguration
+
+from conans import ConanFile, CMake, tools, AutoToolsBuildEnvironment, RunEnvironment, python_requires
+from conans.errors import ConanInvalidConfiguration, ConanException
+from conans.tools import os_info
+import os, re, stat, fnmatch, platform, glob, traceback, shutil
+from functools import total_ordering
+
+# if you using python less than 3 use from distutils import strtobool
+from distutils.util import strtobool
+
+conan_build_helper = python_requires("conan_build_helper/[~=0.0]@conan/stable")
 
 # conan runs the methods in this order:
 # config_options(),
@@ -17,7 +29,7 @@ import shutil
 # package(),
 # package_info()
 
-class chromium_tcmalloc_conan_project(ConanFile):
+class chromium_tcmalloc_conan_project(conan_build_helper.CMakePackage):
     name = "chromium_tcmalloc"
 
     # Indicates License type of the packaged library
@@ -33,23 +45,29 @@ class chromium_tcmalloc_conan_project(ConanFile):
     topics = ('c++')
 
     options = {
-        "shared": [True, False],
-        "debug": [True, False],
-        "enable_tests": [True, False],
-        "use_alloc_shim": [True, False],
-        "use_deb_alloc": [True, False],
-        "enable_sanitizers": [True, False]
+      "enable_ubsan": [True, False],
+      "enable_asan": [True, False],
+      "enable_msan": [True, False],
+      "enable_tsan": [True, False],
+      "shared": [True, False],
+      "debug": [True, False],
+      "use_alloc_shim": [True, False],
+      "use_deb_alloc": [True, False],
+      "enable_sanitizers": [True, False]
     }
 
     default_options = (
-        "shared=False",
-        "debug=False",
-        "enable_tests=False",
-        "use_alloc_shim=False",
-        "use_deb_alloc=False",
-        "enable_sanitizers=False"
-        # build
-        #"*:shared=False"
+      "enable_ubsan=False",
+      "enable_asan=False",
+      "enable_msan=False",
+      "enable_tsan=False",
+      "shared=False",
+      "debug=False",
+      "use_alloc_shim=False",
+      "use_deb_alloc=False",
+      "enable_sanitizers=False"
+      # build
+      #"*:shared=False"
     )
 
     # Custom attributes for Bincrafters recipe conventions
@@ -66,13 +84,53 @@ class chromium_tcmalloc_conan_project(ConanFile):
     # there is no need to define a `source` method. The source folder can be
     # defined like this
     exports_sources = ("LICENSE", "VERSION", "*.md", "include/*", "src/*",
-                       "cmake/*", "CMakeLists.txt", "tests/*", "benchmarks/*",
+                       "cmake/*", "examples/*", "CMakeLists.txt", "tests/*", "benchmarks/*",
                        "scripts/*", "tools/*", "codegen/*", "assets/*",
                        "docs/*", "licenses/*", "patches/*", "resources/*",
                        "submodules/*", "thirdparty/*", "third-party/*",
                        "third_party/*", "base/*", "build/*")
 
     settings = "os", "compiler", "build_type", "arch"
+
+    # sets cmake variables required to use clang 10 from conan
+    def _is_compile_with_llvm_tools_enabled(self):
+      return self._environ_option("COMPILE_WITH_LLVM_TOOLS", default = 'false')
+
+    # installs clang 10 from conan
+    def _is_llvm_tools_enabled(self):
+      return self._environ_option("ENABLE_LLVM_TOOLS", default = 'false')
+
+    def configure(self):
+        lower_build_type = str(self.settings.build_type).lower()
+
+        if lower_build_type != "release" and not self._is_llvm_tools_enabled():
+            self.output.warn('enable llvm_tools for Debug builds')
+
+        if self._is_compile_with_llvm_tools_enabled() and not self._is_llvm_tools_enabled():
+            raise ConanInvalidConfiguration("llvm_tools must be enabled")
+
+        if self.options.enable_ubsan \
+           or self.options.enable_asan \
+           or self.options.enable_msan \
+           or self.options.enable_tsan:
+            if not self._is_llvm_tools_enabled():
+                raise ConanInvalidConfiguration("sanitizers require llvm_tools")
+
+        if self.options.enable_ubsan:
+            if self._is_tests_enabled():
+              self.options["conan_gtest"].enable_ubsan = True
+
+        if self.options.enable_asan:
+            if self._is_tests_enabled():
+              self.options["conan_gtest"].enable_asan = True
+
+        if self.options.enable_msan:
+            if self._is_tests_enabled():
+              self.options["conan_gtest"].enable_msan = True
+
+        if self.options.enable_tsan:
+            if self._is_tests_enabled():
+              self.options["conan_gtest"].enable_tsan = True
 
     #def source(self):
     #  url = "https://github.com/....."
@@ -81,11 +139,22 @@ class chromium_tcmalloc_conan_project(ConanFile):
     def build_requirements(self):
         self.build_requires("cmake_platform_detection/master@conan/stable")
         self.build_requires("cmake_build_options/master@conan/stable")
+        self.build_requires("cmake_helper_utils/master@conan/stable")
 
-        if self.options.enable_tests:
+        if self._is_tests_enabled():
             self.build_requires("catch2/[>=2.1.0]@bincrafters/stable")
             self.build_requires("conan_gtest/release-1.10.0@conan/stable")
             self.build_requires("FakeIt/[>=2.0.4]@gasuketsu/stable")
+
+        if self.options.enable_tsan \
+            or self.options.enable_msan \
+            or self.options.enable_asan \
+            or self.options.enable_ubsan:
+          self.build_requires("cmake_sanitizers/master@conan/stable")
+
+        # provides clang-tidy, clang-format, IWYU, scan-build, etc.
+        if self._is_llvm_tools_enabled():
+          self.build_requires("llvm_tools/master@conan/stable")
 
     def requirements(self):
         self.requires("chromium_build_util/master@conan/stable")
@@ -108,11 +177,29 @@ class chromium_tcmalloc_conan_project(ConanFile):
 
         add_cmake_option("ENABLE_SANITIZERS", self.options.enable_sanitizers)
 
-        add_cmake_option("ENABLE_TESTS", self.options.enable_tests)
+        add_cmake_option("ENABLE_TESTS", self._is_tests_enabled())
 
         add_cmake_option("USE_ALLOC_SHIM", self.options.use_alloc_shim)
 
         add_cmake_option("USE_DEB_ALLOC", self.options.use_deb_alloc)
+
+        cmake.definitions["ENABLE_UBSAN"] = 'ON'
+        if not self.options.enable_ubsan:
+            cmake.definitions["ENABLE_UBSAN"] = 'OFF'
+
+        cmake.definitions["ENABLE_ASAN"] = 'ON'
+        if not self.options.enable_asan:
+            cmake.definitions["ENABLE_ASAN"] = 'OFF'
+
+        cmake.definitions["ENABLE_MSAN"] = 'ON'
+        if not self.options.enable_msan:
+            cmake.definitions["ENABLE_MSAN"] = 'OFF'
+
+        cmake.definitions["ENABLE_TSAN"] = 'ON'
+        if not self.options.enable_tsan:
+            cmake.definitions["ENABLE_TSAN"] = 'OFF'
+
+        self.add_cmake_option(cmake, "COMPILE_WITH_LLVM_TOOLS", self._is_compile_with_llvm_tools_enabled())
 
         cmake.configure(build_folder=self._build_subfolder)
 
@@ -142,7 +229,7 @@ class chromium_tcmalloc_conan_project(ConanFile):
         # -j flag for parallel builds
         cmake.build(args=["--", "-j%s" % cpu_count])
 
-        if self.options.enable_tests:
+        if self._is_tests_enabled():
           self.output.info('Running tests')
           self.run('ctest --parallel %s' % (cpu_count))
           # TODO: use cmake.test()
