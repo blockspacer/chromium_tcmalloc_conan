@@ -84,7 +84,7 @@ class chromium_tcmalloc_conan_project(ConanFile):
 
         if self.options.enable_tests:
             self.build_requires("catch2/[>=2.1.0]@bincrafters/stable")
-            self.build_requires("gtest/[>=1.8.0]@bincrafters/stable")
+            self.build_requires("conan_gtest/release-1.10.0@conan/stable")
             self.build_requires("FakeIt/[>=2.0.4]@gasuketsu/stable")
 
     def requirements(self):
