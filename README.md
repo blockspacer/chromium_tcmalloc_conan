@@ -1,6 +1,8 @@
 # About
 
-Modified `tcmalloc` library from chromium https://github.com/chromium/chromium/tree/master/base
+Modified `tcmalloc` library from chromium
+
+See https://chromium.googlesource.com/chromium/src/third_party/tcmalloc/chromium/+/62fdbb916f3d9e77bf653807793b29af3cdae9c4
 
 ## EXTRA FEATURES
 

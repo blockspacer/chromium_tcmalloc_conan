@@ -53,7 +53,11 @@ class chromium_tcmalloc_conan_project(conan_build_helper.CMakePackage):
       "debug": [True, False],
       "use_alloc_shim": [True, False],
       "use_deb_alloc": [True, False],
-      "enable_sanitizers": [True, False]
+      "enable_sanitizers": [True, False],
+      "enable_profiling": [True, False],
+      "use_allocator_shim": [True, False],
+      "use_tcmalloc_small_but_slow": [True, False],
+      "enable_debugallocation": [True, False],
     }
 
     default_options = (
@@ -65,7 +69,11 @@ class chromium_tcmalloc_conan_project(conan_build_helper.CMakePackage):
       "debug=False",
       "use_alloc_shim=False",
       "use_deb_alloc=False",
-      "enable_sanitizers=False"
+      "enable_sanitizers=False",
+      "enable_profiling=False",
+      "use_allocator_shim=False",
+      "use_tcmalloc_small_but_slow=False",
+      "enable_debugallocation=False",
       # build
       #"*:shared=False"
     )
@@ -143,7 +151,7 @@ class chromium_tcmalloc_conan_project(conan_build_helper.CMakePackage):
 
         if self._is_tests_enabled():
             self.build_requires("catch2/[>=2.1.0]@bincrafters/stable")
-            self.build_requires("conan_gtest/release-1.10.0@conan/stable")
+            self.build_requires("conan_gtest/stable@conan/stable")
             self.build_requires("FakeIt/[>=2.0.4]@gasuketsu/stable")
 
         if self.options.enable_tsan \
@@ -176,6 +184,14 @@ class chromium_tcmalloc_conan_project(conan_build_helper.CMakePackage):
             cmake.definitions[var_name] = var_value
 
         add_cmake_option("ENABLE_SANITIZERS", self.options.enable_sanitizers)
+
+        add_cmake_option("enable_profiling", self.options.enable_profiling)
+
+        add_cmake_option("use_allocator_shim", self.options.use_allocator_shim)
+
+        add_cmake_option("use_tcmalloc_small_but_slow", self.options.use_tcmalloc_small_but_slow)
+
+        add_cmake_option("enable_debugallocation", self.options.enable_debugallocation)
 
         add_cmake_option("ENABLE_TESTS", self._is_tests_enabled())
 

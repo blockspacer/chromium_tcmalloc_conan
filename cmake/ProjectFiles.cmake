@@ -109,3 +109,20 @@ list(APPEND TCMALLOC_SOURCES
   ### build ###
   #${CMAKE_CURRENT_SOURCE_DIR}/build/build_config.h
 )
+
+if (enable_profiling)
+  list(APPEND TCMALLOC_SOURCES
+    ${TCMALLOC_DIR}/src/base/thread_lister.c
+    ${TCMALLOC_DIR}/src/base/thread_lister.h
+    ${TCMALLOC_DIR}/src/heap-profile-table.cc
+    ${TCMALLOC_DIR}/src/heap-profile-table.h
+    ${TCMALLOC_DIR}/src/heap-profiler.cc
+    ${TCMALLOC_DIR}/src/memory_region_map.cc
+    ${TCMALLOC_DIR}/src/memory_region_map.h
+    ${TCMALLOC_DIR}/src/profile-handler.cc
+    ${TCMALLOC_DIR}/src/profile-handler.h
+    ${TCMALLOC_DIR}/src/profiledata.cc
+    ${TCMALLOC_DIR}/src/profiledata.h
+    ${TCMALLOC_DIR}/src/profiler.cc
+  )
+endif()

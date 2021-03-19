@@ -1,4 +1,5 @@
 ﻿# see https://github.com/chromium/chromium/blob/9db0b5162b8648833c3a6b1af044cebd9d7d3855/base/BUILD.gn
+# see https://source.chromium.org/chromium/chromium/src/+/master:third_party/tcmalloc/
 
 cmake_minimum_required(VERSION 3.4)
 
@@ -294,7 +295,25 @@ endif()
 # user-defined synchronization mechanisms.
 if(ENABLE_DYNAMIC_ANNOTATIONS)
   list(APPEND TCMALLOC_PUBLIC_DEFINES DYNAMIC_ANNOTATIONS_ENABLED=1)
-endif(ENABLE_DYNAMIC_ANNOTATIONS)
+endif()
+
+if(enable_profiling)
+  list(APPEND TCMALLOC_PUBLIC_DEFINES ENABLE_PROFILING=1)
+endif()
+
+if(use_allocator_shim)
+  list(APPEND TCMALLOC_PUBLIC_DEFINES TCMALLOC_DONT_REPLACE_SYSTEM_ALLOC=1)
+endif()
+
+if(use_tcmalloc_small_but_slow)
+  list(APPEND TCMALLOC_PUBLIC_DEFINES TCMALLOC_SMALL_BUT_SLOW=1)
+endif()
+
+if(enable_debugallocation)
+  list(APPEND TCMALLOC_PUBLIC_DEFINES TCMALLOC_FOR_DEBUGALLOCATION=1)
+endif(enable_debugallocation)
+
+list(APPEND TCMALLOC_PRIVATE_DEFINES USE_TCMALLOC=1)
 
 # https://github.com/chromium/chromium/blob/master/base/allocator/BUILD.gn#L204
 list(APPEND TCMALLOC_PRIVATE_DEFINES NO_HEAP_CHECK=1)
