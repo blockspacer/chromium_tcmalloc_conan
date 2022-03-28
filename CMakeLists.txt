@@ -187,7 +187,7 @@ add_relative_include_dir(${STATIC_LIB_NAME} PUBLIC PUBLIC "third_party/tcmalloc/
 
 add_relative_include_dir(${STATIC_LIB_NAME} PUBLIC PUBLIC "third_party/tcmalloc/chromium/src/gperftools")
 
-set_property(TARGET ${STATIC_LIB_NAME} PROPERTY CXX_STANDARD 17)
+#set_property(TARGET ${STATIC_LIB_NAME} PROPERTY CXX_STANDARD 17)
 
 # POSITION_INDEPENDENT_CODE for -fPIC
 # -fPIC may be used to link static library into dynamic one
@@ -271,7 +271,7 @@ else(ENABLE_UBSAN)
 endif(ENABLE_UBSAN)
 
 if(TARGET_EMSCRIPTEN)
-  # use PROPERTY CXX_STANDARD 17
+  # use PROPERTY compiler.cppstd
 else()
   target_compile_features(${STATIC_LIB_NAME}
     PUBLIC cxx_auto_type
